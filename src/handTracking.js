@@ -4,8 +4,9 @@ import {
 } from "@mediapipe/tasks-vision";
 
 // model weights for the pretrained hand landmarker.
+// Keep the WASM version in sync with the npm package in package.json.
 const WASM_PATH =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm";
 const MODEL_PATH =
   "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
@@ -36,28 +37,25 @@ const CONNECTIONS = [
   [0, 17],
 ];
 
-export function drawHandLandmarks(ctx, result, width, height) {
-  ctx.clearRect(0, 0, width, height);
+// Draws one hand. The video is CSS-mirrored but the canvas isn't,
+// so x is flipped here to line up with the mirrored video.
+export function drawHandLandmarks(ctx, landmarks, width, height, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  for (const [startIdx, endIdx] of CONNECTIONS) {
+    const start = landmarks[startIdx];
+    const end = landmarks[endIdx];
+    // Landmark coords are normalized to [0,1]
+    ctx.beginPath();
+    ctx.moveTo((1 - start.x) * width, start.y * height);
+    ctx.lineTo((1 - end.x) * width, end.y * height);
+    ctx.stroke();
+  }
 
-  // result.landmarks has one entry per detected hand
-  for (const landmarks of result.landmarks) {
-    ctx.strokeStyle = "#00e5ff";
-    ctx.lineWidth = 2;
-    for (const [startIdx, endIdx] of CONNECTIONS) {
-      const start = landmarks[startIdx];
-      const end = landmarks[endIdx];
-      // Landmark coords are normalized to [0,1]
-      ctx.beginPath();
-      ctx.moveTo(start.x * width, start.y * height);
-      ctx.lineTo(end.x * width, end.y * height);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "#ff4081";
-    for (const point of landmarks) {
-      ctx.beginPath();
-      ctx.arc(point.x * width, point.y * height, 4, 0, 2 * Math.PI);
-      ctx.fill();
-    }
+  ctx.fillStyle = color;
+  for (const point of landmarks) {
+    ctx.beginPath();
+    ctx.arc((1 - point.x) * width, point.y * height, 4, 0, 2 * Math.PI);
+    ctx.fill();
   }
 }

@@ -9,11 +9,13 @@
     <div id="app">
       <h1>Vision Theremin</h1>
       <div id="video-container" style="position: relative; width: fit-content;">
-        <video id="webcam" autoplay playsinline muted></video>
+        <!-- Only the video is mirrored; the canvas mirrors x in its drawing code. -->
+        <video id="webcam" autoplay playsinline muted style="transform: scaleX(-1);"></video>
         <canvas id="overlay" style="position: absolute; top: 0; left: 0;"></canvas>
       </div>
-      <p id="status">Click "Start Camera" to begin.</p>
-      <button id="start-camera">Start Camera</button>
+      <p id="readout"></p>
+      <p id="status">Click "Start" to begin.</p>
+      <button id="start-camera">Start</button>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
