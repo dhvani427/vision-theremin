@@ -3,20 +3,89 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Vision Theremin</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23ff4f00'/><circle cx='12' cy='18' r='6' fill='none' stroke='white' stroke-width='3.5'/><rect x='21' y='5' width='4.5' height='22' fill='white'/></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap"
+    />
   </head>
   <body>
-    <div id="app">
-      <h1>Vision Theremin</h1>
-      <div id="video-container" style="position: relative; width: fit-content;">
-        <!-- Only the video is mirrored; the canvas mirrors x in its drawing code. -->
-        <video id="webcam" autoplay playsinline muted style="transform: scaleX(-1);"></video>
-        <canvas id="overlay" style="position: absolute; top: 0; left: 0;"></canvas>
+    <main id="menu" class="menu">
+      <div class="menu-content">
+        <p class="eyebrow">A computer vision instrument</p>
+        <h1 class="title">Vision<br /><span class="accent">Theremin</span></h1>
+
+        <div class="howto">
+          <div class="step">
+            <span class="icon icon-pitch" aria-hidden="true"></span>
+            <h2>Pitch <span>Right hand</span></h2>
+          </div>
+          <div class="step">
+            <span class="icon icon-volume" aria-hidden="true"></span>
+            <h2>Volume <span>Left hand</span></h2>
+          </div>
+        </div>
+
+        <button id="start-button" class="btn-primary">Start playing</button>
+        <p id="status" class="status" role="status"></p>
       </div>
-      <p id="readout"></p>
-      <p id="status">Click "Start" to begin.</p>
-      <button id="start-camera">Start</button>
-    </div>
+
+      <!-- An abstract theremin: volume loop, pitch antenna, cabinet, and two hands -->
+      <div class="menu-art" aria-hidden="true">
+        <svg viewBox="0 0 400 400">
+          <circle cx="110" cy="270" r="44" fill="none" stroke="currentColor" stroke-width="16" />
+          <rect x="300" y="30" width="20" height="300" fill="currentColor" />
+          <rect x="40" y="330" width="320" height="40" fill="currentColor" />
+          <circle class="hand hand-volume" cx="110" cy="140" r="20" fill="currentColor" />
+          <circle class="hand hand-pitch" cx="240" cy="150" r="20" fill="currentColor" />
+        </svg>
+      </div>
+    </main>
+
+    <section id="player" class="player" hidden>
+      <header class="player-bar">
+        <span class="brand">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="11" cy="18" r="7" fill="none" stroke="currentColor" stroke-width="3.5" />
+            <rect x="22" y="4" width="4.5" height="24" fill="currentColor" />
+          </svg>
+          Vision Theremin
+        </span>
+        <button id="stop-button" class="btn-secondary">Stop</button>
+      </header>
+
+      <div class="stage">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <p id="hint" class="hint">Show both hands to play</p>
+      </div>
+
+      <div class="hud">
+        <div class="hud-pitch">
+          <span class="hud-label">Note</span>
+          <div class="hud-reading">
+            <span id="note" class="hud-note">—</span>
+            <span id="hz" class="hud-hz">— Hz</span>
+          </div>
+        </div>
+        <div class="hud-volume">
+          <span class="hud-label">Volume</span>
+          <div class="meter"><div id="volume-fill" class="meter-fill"></div></div>
+        </div>
+        <div class="hud-hands">
+          <span id="pitch-chip" class="chip chip-pitch"><span class="dot"></span>Pitch hand</span>
+          <span id="volume-chip" class="chip chip-volume"><span class="dot"></span>Volume hand</span>
+        </div>
+      </div>
+    </section>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

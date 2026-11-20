@@ -1,4 +1,5 @@
-import { startCamera } from "./camera.js";
+import "./style.css";
+import { startCamera, stopCamera } from "./camera.js";
 import {
   createHandLandmarker,
   detectHands,
@@ -14,20 +15,33 @@ import {
 import { drawPalmMarker } from "./overlay.js";
 import { createTheremin } from "./theremin.js";
 
+const menu = document.getElementById("menu");
+const player = document.getElementById("player");
 const video = document.getElementById("webcam");
 const canvas = document.getElementById("overlay");
 const ctx = canvas.getContext("2d");
 const statusEl = document.getElementById("status");
-const readoutEl = document.getElementById("readout");
-const startButton = document.getElementById("start-camera");
+const startButton = document.getElementById("start-button");
+const stopButton = document.getElementById("stop-button");
+const hintEl = document.getElementById("hint");
+const noteEl = document.getElementById("note");
+const hzEl = document.getElementById("hz");
+const volumeFill = document.getElementById("volume-fill");
+const pitchChip = document.getElementById("pitch-chip");
+const volumeChip = document.getElementById("volume-chip");
 
-const PITCH_COLOR = "#00e5ff";
-const VOLUME_COLOR = "#ff4081";
+// Hand colors come from the theme in style.css: the pitch hand is orange
+// with white details, the volume hand white with orange details.
+const theme = getComputedStyle(document.documentElement);
+const ORANGE = theme.getPropertyValue("--orange").trim();
+const WHITE = theme.getPropertyValue("--paper").trim();
 // How long to hold the last value when a hand drops out, before fading.
 const HOLD_MS = 150;
 
 let handLandmarker;
 let theremin;
+let stream;
+let rafId;
 let lastVideoTime = -1;
 
 const lastSeen = { pitch: -Infinity, volume: -Infinity };
@@ -58,21 +72,26 @@ function updateSound(pitchHand, volumeHand, now) {
   }
 }
 
-function draw(pitchHand, volumeHand) {
+function drawOverlay(pitchHand, volumeHand) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (const [hand, color] of [
-    [pitchHand, PITCH_COLOR],
-    [volumeHand, VOLUME_COLOR],
+  for (const [hand, color, accent] of [
+    [pitchHand, ORANGE, WHITE],
+    [volumeHand, WHITE, ORANGE],
   ]) {
     if (!hand) continue;
-    drawHandLandmarks(ctx, hand.landmarks, canvas.width, canvas.height, color);
-    drawPalmMarker(ctx, hand, canvas.width, canvas.height, color);
+    drawHandLandmarks(ctx, hand.landmarks, canvas.width, canvas.height, color, accent);
+    drawPalmMarker(ctx, hand, canvas.width, canvas.height, color, accent);
   }
+}
 
-  readoutEl.textContent = silent
-    ? "Show both hands to play: right hand for pitch, left hand for volume."
-    : `${noteName(frequency)} · ${Math.round(frequency)} Hz · vol ${Math.round((gain / MAX_GAIN) * 100)}%`;
+function updateHud(pitchHand, volumeHand) {
+  hintEl.hidden = !silent;
+  noteEl.textContent = silent ? "—" : noteName(frequency);
+  hzEl.textContent = silent ? "— Hz" : `${Math.round(frequency)} Hz`;
+  volumeFill.style.width = `${silent ? 0 : (gain / MAX_GAIN) * 100}%`;
+  pitchChip.classList.toggle("on", Boolean(pitchHand));
+  volumeChip.classList.toggle("on", Boolean(volumeHand));
 }
 
 function trackingLoop() {
@@ -82,9 +101,20 @@ function trackingLoop() {
     const result = detectHands(handLandmarker, video, now);
     const { pitchHand, volumeHand } = assignHands(result);
     updateSound(pitchHand, volumeHand, now);
-    draw(pitchHand, volumeHand);
+    drawOverlay(pitchHand, volumeHand);
+    updateHud(pitchHand, volumeHand);
   }
-  requestAnimationFrame(trackingLoop);
+  rafId = requestAnimationFrame(trackingLoop);
+}
+
+function showPlayer(visible) {
+  menu.hidden = visible;
+  player.hidden = !visible;
+}
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("error", isError);
 }
 
 startButton.addEventListener("click", async () => {
@@ -93,21 +123,44 @@ startButton.addEventListener("click", async () => {
   // Create audio before any await so it starts inside the click's user gesture.
   if (!theremin) theremin = createTheremin();
 
-  statusEl.textContent = "Requesting camera access...";
   try {
-    await startCamera(video);
+    setStatus("Requesting camera access…");
+    stream = await startCamera(video);
+    if (!handLandmarker) {
+      setStatus("Loading hand tracking model…");
+      handLandmarker = await createHandLandmarker();
+    }
   } catch (error) {
-    statusEl.textContent = `Camera error: ${error.message}`;
+    if (stream) stopCamera(stream);
+    stream = null;
+    setStatus(`Couldn't start: ${error.message}`, true);
     startButton.disabled = false;
     return;
   }
 
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
+  player.style.setProperty("--aspect", video.videoWidth / video.videoHeight);
 
-  statusEl.textContent = "Loading hand tracking model...";
-  handLandmarker = await createHandLandmarker();
-
-  statusEl.textContent = "Tracking hands.";
+  setStatus("");
+  startButton.disabled = false;
+  showPlayer(true);
   trackingLoop();
+});
+
+stopButton.addEventListener("click", () => {
+  cancelAnimationFrame(rafId);
+  theremin.fadeOut();
+  silent = true;
+  lastSeen.pitch = -Infinity;
+  lastSeen.volume = -Infinity;
+  lastVideoTime = -1;
+
+  stopCamera(stream);
+  stream = null;
+  video.srcObject = null;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  updateHud(null, null);
+  showPlayer(false);
 });

@@ -39,23 +39,32 @@ const CONNECTIONS = [
 
 // Draws one hand. The video is CSS-mirrored but the canvas isn't,
 // so x is flipped here to line up with the mirrored video.
-export function drawHandLandmarks(ctx, landmarks, width, height, color) {
+export function drawHandLandmarks(ctx, landmarks, width, height, color, jointColor) {
+  ctx.save();
+
+  // All bones go in one path and one stroke call.
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.beginPath();
   for (const [startIdx, endIdx] of CONNECTIONS) {
     const start = landmarks[startIdx];
     const end = landmarks[endIdx];
     // Landmark coords are normalized to [0,1]
-    ctx.beginPath();
     ctx.moveTo((1 - start.x) * width, start.y * height);
     ctx.lineTo((1 - end.x) * width, end.y * height);
-    ctx.stroke();
   }
+  ctx.stroke();
 
-  ctx.fillStyle = color;
+  ctx.fillStyle = jointColor;
+  ctx.beginPath();
   for (const point of landmarks) {
-    ctx.beginPath();
-    ctx.arc((1 - point.x) * width, point.y * height, 4, 0, 2 * Math.PI);
-    ctx.fill();
+    const x = (1 - point.x) * width;
+    const y = point.y * height;
+    ctx.moveTo(x + 3.5, y);
+    ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
   }
+  ctx.fill();
+
+  ctx.restore();
 }
