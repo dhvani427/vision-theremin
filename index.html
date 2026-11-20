@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vision Theremin</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Vision Theremin</h1>
+      <div id="video-container" style="position: relative; width: fit-content;">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="overlay" style="position: absolute; top: 0; left: 0;"></canvas>
+      </div>
+      <p id="status">Click "Start Camera" to begin.</p>
+      <button id="start-camera">Start Camera</button>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
